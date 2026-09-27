@@ -1,5 +1,8 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../domain/entities/category_completion_stat.dart';
+import '../../../domain/entities/weekly_day_matrix.dart';
+
 /// Base state for Dhikr statistics.
 sealed class StatsState extends Equatable {
   const StatsState();
@@ -29,6 +32,18 @@ final class StatsLoaded extends StatsState {
   /// Total number of completed Dhikr sessions.
   final int totalCompletions;
 
+  /// Total number of distinct sub-categories completed at least once.
+  final int totalCompletedSubCategories;
+
+  /// Active day completion rate percentage (0.0% to 100.0%).
+  final double activeDayRate;
+
+  /// Top most completed sub-categories (ranked 1st, 2nd, 3rd).
+  final List<CategoryCompletionStat> topSubCategories;
+
+  /// 7-day Arabic week matrix (Saturday to Friday) with statuses.
+  final List<WeeklyDayData> weeklyMatrix;
+
   /// Map of {YYYY-MM-DD: completionCount} for the last 30 days.
   final Map<String, int> heatmap;
 
@@ -36,6 +51,10 @@ final class StatsLoaded extends StatsState {
     required this.currentStreak,
     required this.longestStreak,
     required this.totalCompletions,
+    this.totalCompletedSubCategories = 0,
+    this.activeDayRate = 0.0,
+    this.topSubCategories = const [],
+    this.weeklyMatrix = const [],
     required this.heatmap,
   });
 
@@ -44,6 +63,10 @@ final class StatsLoaded extends StatsState {
         currentStreak,
         longestStreak,
         totalCompletions,
+        totalCompletedSubCategories,
+        activeDayRate,
+        topSubCategories,
+        weeklyMatrix,
         heatmap,
       ];
 }

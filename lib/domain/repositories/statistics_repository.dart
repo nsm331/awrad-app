@@ -4,7 +4,9 @@
 /// completion metrics used by the statistics presentation layer.
 library;
 
+import '../entities/category_completion_stat.dart';
 import '../entities/completion_log.dart';
+import '../entities/weekly_day_matrix.dart';
 import 'dhikr_repository.dart' show Result;
 
 /// Contract for completion-log and statistics data operations (100% offline).
@@ -47,6 +49,18 @@ abstract class StatisticsRepository {
 
   /// Returns the total number of completed sessions across all chapters.
   Future<Result<int>> getTotalCompletions();
+
+  /// Returns the number of unique sub-categories that have been completed at least once.
+  Future<Result<int>> getTotalCompletedSubCategoriesCount();
+
+  /// Returns the top [limit] most completed sub-categories, ranked by completion count.
+  Future<Result<List<CategoryCompletionStat>>> getMostCompletedSubCategories({int limit = 3});
+
+  /// Returns the 7-day Arabic week matrix (Saturday to Friday) with completion status.
+  Future<Result<List<WeeklyDayData>>> getWeeklyMatrix();
+
+  /// Returns the active day rate (percentage 0.0 - 100.0) over the given [days] period.
+  Future<Result<double>> getActiveDayRate({int days = 30});
 
   /// Returns a map of YYYY-MM-DD -> completionCount for the 7 days of the current week.
   Future<Result<Map<String, int>>> getWeeklyCompletions();

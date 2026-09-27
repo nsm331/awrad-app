@@ -10,7 +10,9 @@ import 'package:sqflite/sqflite.dart';
 
 import '../../core/constants/app_constants.dart';
 import '../../core/errors/failures.dart';
+import '../../domain/entities/category_completion_stat.dart';
 import '../../domain/entities/completion_log.dart';
+import '../../domain/entities/weekly_day_matrix.dart';
 import '../../domain/repositories/dhikr_repository.dart' show Result, Success, Err;
 import '../../domain/repositories/statistics_repository.dart';
 import '../datasources/local/database_helper.dart';
@@ -261,6 +263,172 @@ class StatisticsRepositoryImpl implements StatisticsRepository {
     } catch (e, st) {
       developer.log('getTotalCompletions failed: $e', name: 'StatisticsRepositoryImpl', error: e, stackTrace: st);
       return const Success(0);
+    }
+  }
+
+  @override
+  Future<Result<int>> getTotalCompletedSubCategoriesCount() async {
+    try {
+      final db = await _db;
+      final count = Sqflite.firstIntValue(
+        await db.rawQuery(
+          'SELECT COUNT(DISTINCT sub_category_id) FROM ${DatabaseConstants.completionLogsTable}',
+        ),
+      ) ?? 0;
+      return Success(count);
+    } catch (e, st) {
+      developer.log('getTotalCompletedSubCategoriesCount failed: $e', name: 'StatisticsRepositoryImpl', error: e, stackTrace: st);
+      return const Success(0);
+    }
+  }
+
+  @override
+  Future<Result<List<CategoryCompletionStat>>> getMostCompletedSubCategories({int limit = 3}) async {
+    try {
+      final db = await _db;
+      final rows = await db.rawQuery('''
+        SELECT sc.id as sub_category_id, sc.title as title, COUNT(cl.id) as completion_count
+        FROM ${DatabaseConstants.subCategoriesTable} sc
+        JOIN ${DatabaseConstants.completionLogsTable} cl ON sc.id = cl.sub_category_id
+        GROUP BY sc.id, sc.title
+        ORDER BY completion_count DESC, sc.id ASC
+        LIMIT ?
+      ''', [limit]);
+
+      final stats = rows.map((r) => CategoryCompletionStat(
+        subCategoryId: r['sub_category_id'] as int,
+        title: r['title'] as String,
+        completionCount: (r['completion_count'] as int?) ?? 0,
+      )).toList(growable: false);
+
+      return Success(stats);
+    } catch (e, st) {
+      developer.log('getMostCompletedSubCategories failed: $e', name: 'StatisticsRepositoryImpl', error: e, stackTrace: st);
+      return const Success([]);
+    }
+  }
+
+  static const _arabicDayNames = [
+    'السبت',
+    'الأحد',
+    'الإثنين',
+    'الثلاثاء',
+    'الأربعاء',
+    'الخميس',
+    'الجمعة',
+  ];
+
+  @override
+  Future<Result<List<WeeklyDayData>>> getWeeklyMatrix() async {
+    try {
+      final db = await _db;
+      final today = _today();
+
+      // Arabic week starts on Saturday and ends on Friday
+      int daysSinceSaturday;
+      if (today.weekday == DateTime.saturday) {
+        daysSinceSaturday = 0;
+      } else if (today.weekday == DateTime.sunday) {
+        daysSinceSaturday = 1;
+      } else {
+        daysSinceSaturday = today.weekday + 1;
+      }
+
+      final saturday = today.subtract(Duration(days: daysSinceSaturday));
+      final friday = saturday.add(const Duration(days: 6));
+      final startStr = _formatDate(saturday);
+      final endStr = _formatDate(friday);
+
+      final rows = await db.rawQuery('''
+        SELECT completed_date, COUNT(*) as cnt
+        FROM ${DatabaseConstants.completionLogsTable}
+        WHERE completed_date >= ? AND completed_date <= ?
+        GROUP BY completed_date
+      ''', [startStr, endStr]);
+
+      final countMap = <String, int>{};
+      for (final r in rows) {
+        countMap[r['completed_date'] as String] = (r['cnt'] as int?) ?? 0;
+      }
+
+      final List<WeeklyDayData> matrix = [];
+      for (int i = 0; i < 7; i++) {
+        final date = saturday.add(Duration(days: i));
+        final dateStr = _formatDate(date);
+        final count = countMap[dateStr] ?? 0;
+        final isToday = date.isAtSameMomentAs(today);
+        final isFuture = date.isAfter(today);
+
+        final WeeklyDayStatus status;
+        if (isFuture) {
+          status = WeeklyDayStatus.future;
+        } else if (count > 0) {
+          status = WeeklyDayStatus.completed;
+        } else if (isToday) {
+          status = WeeklyDayStatus.incomplete;
+        } else {
+          status = WeeklyDayStatus.missed;
+        }
+
+        matrix.add(WeeklyDayData(
+          date: date,
+          dayName: _arabicDayNames[i],
+          dateLabel: '${date.day}/${date.month}',
+          count: count,
+          status: status,
+          isToday: isToday,
+        ));
+      }
+
+      return Success(matrix);
+    } catch (e, st) {
+      developer.log('getWeeklyMatrix failed: $e', name: 'StatisticsRepositoryImpl', error: e, stackTrace: st);
+      return const Success([]);
+    }
+  }
+
+  @override
+  Future<Result<double>> getActiveDayRate({int days = 30}) async {
+    try {
+      final db = await _db;
+      final today = _today();
+      final startDate = today.subtract(Duration(days: days - 1));
+      final startStr = _formatDate(startDate);
+      final endStr = _formatDate(today);
+
+      final activeDaysCount = Sqflite.firstIntValue(
+        await db.rawQuery('''
+          SELECT COUNT(DISTINCT completed_date)
+          FROM ${DatabaseConstants.completionLogsTable}
+          WHERE completed_date >= ? AND completed_date <= ?
+        ''', [startStr, endStr]),
+      ) ?? 0;
+
+      if (activeDaysCount == 0) {
+        return const Success(0.0);
+      }
+
+      // Check earliest log to avoid penalising brand new users
+      final earliestRow = await db.rawQuery('''
+        SELECT MIN(completed_date) as first_date
+        FROM ${DatabaseConstants.completionLogsTable}
+      ''');
+      int totalDays = days;
+      if (earliestRow.isNotEmpty && earliestRow.first['first_date'] != null) {
+        final firstDate = DateTime.tryParse(earliestRow.first['first_date'] as String);
+        if (firstDate != null) {
+          final daysSinceFirst = today.difference(DateTime(firstDate.year, firstDate.month, firstDate.day)).inDays + 1;
+          if (daysSinceFirst > 0 && daysSinceFirst < days) {
+            totalDays = daysSinceFirst;
+          }
+        }
+      }
+
+      final rate = ((activeDaysCount / totalDays) * 100.0).clamp(0.0, 100.0);
+      return Success(double.parse(rate.toStringAsFixed(1)));
+    } catch (e, st) {
+      developer.log('getActiveDayRate failed: $e', name: 'StatisticsRepositoryImpl', error: e, stackTrace: st);
+      return const Success(0.0);
     }
   }
 

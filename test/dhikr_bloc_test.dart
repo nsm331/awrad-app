@@ -1,8 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:awrad_app/domain/entities/category_completion_stat.dart';
 import 'package:awrad_app/domain/entities/completion_log.dart';
 import 'package:awrad_app/domain/entities/dhikr_item.dart';
 import 'package:awrad_app/domain/entities/parent_category.dart';
 import 'package:awrad_app/domain/entities/sub_category.dart';
+import 'package:awrad_app/domain/entities/weekly_day_matrix.dart';
 import 'package:awrad_app/domain/repositories/dhikr_repository.dart';
 import 'package:awrad_app/domain/repositories/statistics_repository.dart';
 import 'package:awrad_app/presentation/blocs/dhikr/dhikr_bloc.dart';
@@ -161,6 +163,30 @@ class _FakeStatisticsRepository implements StatisticsRepository {
   @override
   Future<Result<Map<String, int>>> getCompletionHeatmap({int days = 30}) async =>
       const Success({});
+
+  @override
+  Future<Result<int>> getTotalCompletedSubCategoriesCount() async =>
+      const Success(1);
+
+  @override
+  Future<Result<List<CategoryCompletionStat>>> getMostCompletedSubCategories({
+    int limit = 3,
+  }) async =>
+      const Success([
+        CategoryCompletionStat(
+          subCategoryId: 1,
+          title: 'أذكار الصباح والمساء',
+          completionCount: 5,
+        ),
+      ]);
+
+  @override
+  Future<Result<List<WeeklyDayData>>> getWeeklyMatrix() async =>
+      const Success([]);
+
+  @override
+  Future<Result<double>> getActiveDayRate({int days = 30}) async =>
+      const Success(85.0);
 
   @override
   Future<Result<int>> deleteCompletionLog(int id) async => const Success(1);
