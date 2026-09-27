@@ -538,7 +538,6 @@ class _WeeklyMatrixCard extends StatelessWidget {
                   final isDone = d.status == WeeklyDayStatus.completed;
                   final isIncomplete = d.status == WeeklyDayStatus.incomplete;
                   final isMissed = d.status == WeeklyDayStatus.missed;
-                  final isFuture = d.status == WeeklyDayStatus.future;
 
                   return Expanded(
                     child: Container(
@@ -764,16 +763,12 @@ class _TopCategoriesCard extends StatelessWidget {
                 final ratio = maxCount > 0 ? (stat.completionCount / maxCount).clamp(0.05, 1.0) : 1.0;
 
                 final Color medalColor;
-                final String medalBadge;
                 if (index == 0) {
                   medalColor = const Color(0xFFFFD700); // Gold
-                  medalBadge = 'الأول';
                 } else if (index == 1) {
                   medalColor = const Color(0xFFC0C0C0); // Silver
-                  medalBadge = 'الثاني';
                 } else {
                   medalColor = const Color(0xFFCD7F32); // Bronze
-                  medalBadge = 'الثالث';
                 }
 
                 return Padding(
