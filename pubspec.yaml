@@ -1,0 +1,92 @@
+name: awrad_app
+description: "Awrad (أَوْرَاد) — An offline Islamic Dhikr companion app built with Flutter."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.5.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  # ── UI ──────────────────────────────────────────────────────────────────────
+  cupertino_icons: ^1.0.8
+
+  # ── State Management ────────────────────────────────────────────────────────
+  flutter_bloc: ^8.1.6
+  equatable: ^2.0.5
+
+  # ── Local Persistence ───────────────────────────────────────────────────────
+  sqflite: ^2.3.3+1
+  path: ^1.9.0
+  path_provider: ^2.1.4
+  shared_preferences: ^2.3.3
+
+  # ── Notifications ───────────────────────────────────────────────────────────
+  flutter_local_notifications: ^18.0.1
+
+  # ── Sharing & Media ─────────────────────────────────────────────────────────
+  share_plus: ^10.0.3
+  screenshot: ^3.0.0
+
+  # ── Internationalisation ────────────────────────────────────────────────────
+  intl: ^0.20.3
+
+  # ── Audio ───────────────────────────────────────────────────────────────────
+  audioplayers: ^6.1.0
+  timezone: ^0.10.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  build_runner: ^2.4.13
+
+flutter:
+  uses-material-design: true
+
+  # ── Data Assets ─────────────────────────────────────────────────────────────
+  assets:
+    - assets/data/hisn_muslim.json
+    - assets/data/hisn_almuslim.json
+    - assets/audio/
+
+  # ── Arabic Fonts ─────────────────────────────────────────────────────────────
+  fonts:
+    # Amiri — elegant Naskh-style Arabic serif with complete Tashkeel support
+    - family: Amiri
+      fonts:
+        - asset: assets/fonts/Amiri-Regular.ttf
+        - asset: assets/fonts/Amiri-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Amiri-Italic.ttf
+          style: italic
+        - asset: assets/fonts/Amiri-BoldItalic.ttf
+          weight: 700
+          style: italic
+
+    # Scheherazade New — comprehensive Unicode Arabic with full vowel marks
+    - family: ScheherazadeNew
+      fonts:
+        - asset: assets/fonts/ScheherazadeNew-Regular.ttf
+        - asset: assets/fonts/ScheherazadeNew-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/ScheherazadeNew-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/ScheherazadeNew-Bold.ttf
+          weight: 700
+
+    # Lateef — UI Arabic font for menus, labels, and Latin text
+    - family: Lateef
+      fonts:
+        - asset: assets/fonts/Lateef-Regular.ttf
+        - asset: assets/fonts/Lateef-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Lateef-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Lateef-Bold.ttf
+          weight: 700
